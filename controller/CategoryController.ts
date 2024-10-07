@@ -14,6 +14,6 @@ export const fetchAllCategories = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json(e);
+        res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json(error);
     }
 };

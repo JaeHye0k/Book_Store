@@ -1,19 +1,37 @@
 import mariadb from "../mariadb.js";
 import { Request, Response } from "express";
-import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { RowDataPacket } from "mysql2";
 import httpStatusCode from "../utills/httpStatusCode.js";
-import { Book, BookCategoryQuery } from "../model/Book.type.js";
+import { Book, BookQuery } from "../model/Book.type.js";
 
-export const fetchAllBooks = async (req: Request, res: Response) => {
+export const fetchAllBooks = async (req: Request<{}, {}, {}, BookQuery>, res: Response) => {
     try {
-        if (Object.keys(req.query).length) {
-            fetchBooksByCategory(req, res);
-        } else {
-            const sql = "SELECT * FROM `books`";
-            const [results] = await mariadb.query<RowDataPacket[]>(sql);
-            const books = results as Book[];
-            res.json(books);
+        let { category, isNew, limit, currentPage } = req.query;
+        limit = +limit;
+        currentPage = +currentPage;
+        const isNewCondition = "pub_date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)";
+        const categoryIdCondition = "category_id = ?";
+        const offset = limit * (currentPage - 1);
+        const newInterval = 1;
+        let sql = "SELECT * FROM `books`";
+        const values: BookQuery[keyof BookQuery][] = [];
+
+        if (category && isNew) {
+            sql += ` WHERE ${categoryIdCondition} AND ${isNewCondition}`;
+            values.push(category, newInterval);
+        } else if (category) {
+            sql += ` WHERE ${categoryIdCondition}`;
+            values.push(category);
+        } else if (isNew) {
+            sql += ` WHERE ${isNewCondition}`;
+            values.push(newInterval);
         }
+        sql += " LIMIT ? OFFSET ?";
+        values.push(limit, offset);
+
+        const [results] = await mariadb.query<RowDataPacket[]>(sql, values);
+        const books = results as Book[];
+        res.json(books);
     } catch (e) {
         const error = e as Error;
         res.status(httpStatusCode.BAD_REQUEST).json(error);
@@ -23,7 +41,8 @@ export const fetchAllBooks = async (req: Request, res: Response) => {
 export const fetchBook = async (req: Request, res: Response) => {
     try {
         const bookId = +req.params.bookId;
-        const sql = "SELECT * FROM `books` WHERE id = ?";
+        const sql =
+            "SELECT * FROM `books` LEFT JOIN `categories` ON `books`.`category_id` = `categories`.`id` WHERE `books`.`id` = ?";
         const [results] = await mariadb.query<RowDataPacket[]>(sql, bookId);
         const book = results[0] as Book;
         if (book) {
@@ -37,31 +56,6 @@ export const fetchBook = async (req: Request, res: Response) => {
     }
 };
 
-const fetchBooksByCategory = async (req: Request, res: Response) => {
-    try {
-        const { categoryId, newly }: BookCategoryQuery = req.query;
-        let sql;
-        let results;
-        const newly_days = 30;
-        if (newly) {
-            sql =
-                "SELECT * FROM `books` WHERE category_id = ? AND pub_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)";
-            [results] = await mariadb.query<RowDataPacket[]>(sql, [categoryId, newly_days]);
-        } else {
-            sql = "SELECT * FROM `books` WHERE category_id = ?";
-            [results] = await mariadb.query<RowDataPacket[]>(sql, categoryId);
-        }
-        const books = results;
-        if (books.length) {
-            res.json(books);
-        } else {
-            res.status(httpStatusCode.NOT_FOUND).end();
-        }
-    } catch (e) {
-        const error = e as Error;
-        res.status(httpStatusCode.BAD_REQUEST).json(error);
-    }
-};
 export const fetchBooksByKeyword = async (req: Request, res: Response) => {
     res.json("키워드별 도서 조회");
 };
