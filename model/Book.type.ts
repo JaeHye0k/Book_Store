@@ -1,11 +1,3 @@
-export interface BookParams {}
-
-export interface BookBody {}
-
-export interface BookResBody {}
-
-export interface BookReqBody {}
-
 export interface BookQuery {
     category?: string | number;
     isNew?: string | boolean;

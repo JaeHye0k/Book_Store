@@ -3,13 +3,8 @@ import { fetchAllBooks, fetchBook, fetchBooksByKeyword } from "../controller/Boo
 
 const router = express.Router();
 
-// 전체 도서 조회
-router.get("/", fetchAllBooks);
-
-// 개별 도서 조회
-router.get("/detail/:bookId", fetchBook);
-
-// 키워드별 도서 조회
-router.get("/search", fetchBooksByKeyword);
+router.get("/", fetchAllBooks); // 전체 도서 조회
+router.get("/detail/:bookId", fetchBook); // 개별 도서 조회
+router.get("/search", fetchBooksByKeyword); // 키워드별 도서 조회
 
 export default router;

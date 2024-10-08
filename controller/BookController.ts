@@ -13,7 +13,9 @@ export const fetchAllBooks = async (req: Request<{}, {}, {}, BookQuery>, res: Re
         const categoryIdCondition = "category_id = ?";
         const offset = limit * (currentPage - 1);
         const newInterval = 1;
-        let sql = "SELECT * FROM `books`";
+        let sql = `SELECT *,
+                    (SELECT COUNT(*) FROM likes WHERE book_id = books.id) AS likes
+                    FROM books`;
         const values: BookQuery[keyof BookQuery][] = [];
 
         if (category && isNew) {
@@ -41,9 +43,17 @@ export const fetchAllBooks = async (req: Request<{}, {}, {}, BookQuery>, res: Re
 export const fetchBook = async (req: Request, res: Response) => {
     try {
         const bookId = +req.params.bookId;
-        const sql =
-            "SELECT * FROM `books` LEFT JOIN `categories` ON `books`.`category_id` = `categories`.`id` WHERE `books`.`id` = ?";
-        const [results] = await mariadb.query<RowDataPacket[]>(sql, bookId);
+        const { userId } = req.body;
+        const sql = `SELECT *, 
+                        (EXISTS (SELECT * FROM likes WHERE book_id = ? AND user_id = ?)) AS liked,
+                        (SELECT COUNT(*) FROM likes WHERE book_id = books.id) AS likes 
+                    FROM books 
+                    LEFT JOIN categories
+                    ON books.category_id = categories.category_id 
+                    WHERE books.id = ?`;
+        const values = [bookId, userId, bookId];
+        const [results] = await mariadb.query<RowDataPacket[]>(sql, values);
+
         const book = results[0] as Book;
         if (book) {
             res.json(book);
