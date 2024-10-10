@@ -38,7 +38,10 @@ INSERT INTO likes (user_id, book_id) VALUES (2, 5);
 DELETE FROM likes WHERE user_id = 1 AND book_id = 3;
 
 // 장바구니 담기
-INSERT INTO cartItems (book_id, quantity, user_id) VALUES (1, 1, 1);
+INSERT INTO cartItems (book_id, quantity, user_id) VALUES 
+    (1, 1, 1),
+    (2, 3, 1),
+    (3, 1, 2);
 
 // 장바구니 아이템 목록 조회
 SELECT cartItems.id, book_id, title, summary, quantity, price 
