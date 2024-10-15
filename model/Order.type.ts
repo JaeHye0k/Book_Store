@@ -1,6 +1,7 @@
+import { RowDataPacket } from "mysql2";
+
 export interface OrderRequestBody {
-    userId: number;
-    items: Item[];
+    orderItems: number[];
     delivery: {
         address: string;
         receiver: string;
@@ -9,10 +10,15 @@ export interface OrderRequestBody {
     totalPrice: number;
     totalQuantity: number;
     firstBookTitle: string;
+    userId: number;
 }
 
-interface Item {
-    cartItemId: number;
-    bookId: number;
-    quantity: number;
+export interface OrderRecord extends RowDataPacket {
+    id: number;
+    user_id: number;
+    total_quantity: number;
+    total_price: number;
+    book_title: string;
+    ordered_at: string;
+    delivery_id: number;
 }

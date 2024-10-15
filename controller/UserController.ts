@@ -54,11 +54,11 @@ export const login = async (req: Request, res: Response) => {
                     res.cookie("token", token, { httpOnly: true });
                     res.json(user);
                 }
-            } else {
-                res.status(httpStatusCode.UNAUTHORIZED).json({
-                    message: "아이디 또는 비밀번호를 확인해주세요",
-                });
             }
+        } else {
+            res.status(httpStatusCode.UNAUTHORIZED).json({
+                message: "아이디 또는 비밀번호를 확인해주세요",
+            });
         }
     } catch (e) {
         const error = e as Error;

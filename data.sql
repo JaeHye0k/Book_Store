@@ -77,3 +77,17 @@ SELECT last_insert_id();
 
 // 결제된 도서 장바구니 삭제
 DELETE FROM cartItems WHERE id IN (1,2,3); 
+
+-- 주문하기 관련 테이블 데이터 전체 삭제
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE orderedBooks;
+TRUNCATE orders;
+TRUNCATE deliveries;
+TRUNCATE cartItems;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- cartItem 세팅
+INSERT INTO `cartItems` (book_id, quantity, user_id)
+VALUES (3, 1, 1), (4, 1, 1), (8, 1, 1), (2, 1, 1)
