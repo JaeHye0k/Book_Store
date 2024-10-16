@@ -5,7 +5,7 @@ import httpStatusCode from "../utills/httpStatusCode.js";
 
 export const fetchAllCategories = async (req: Request, res: Response) => {
     try {
-        const sql = "SELECT * FROM `categories` ORDER BY `id` ASC";
+        const sql = "SELECT * FROM `categories` ORDER BY `category_id` ASC";
         const [results] = await mariadb.query<RowDataPacket[]>(sql);
         if (results.length) {
             res.json(results);

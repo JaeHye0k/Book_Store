@@ -99,7 +99,7 @@ export const fetchAllOrders = async (req: Request, res: Response) => {
     const sql = `SELECT o.id, d.address, d.receiver, d.contact, o.book_title, o.total_quantity, o.total_price, o.ordered_at FROM orders AS o
                 LEFT JOIN deliveries AS d
                 ON o.delivery_id = d.id
-                WHERE user_id = 1`;
+                WHERE user_id = ?`;
     const [results] = await mariadb.query<RowDataPacket[]>(sql, userId);
     res.json(results);
 };

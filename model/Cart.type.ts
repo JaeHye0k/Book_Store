@@ -1,9 +1,9 @@
-export interface CartRequestBody {
+export type CartRequestBody = any & {
     bookId: number;
     quantity: number;
     userId: number;
     cartItemId: number;
     selected: number[];
-}
+};
 
 export type JSONType = number | boolean | string | null | JSONType[] | { [key: string]: JSONType };

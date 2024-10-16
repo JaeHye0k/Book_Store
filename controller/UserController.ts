@@ -6,8 +6,6 @@ import httpStatusCode from "../utills/httpStatusCode.js";
 import jwt, { SignOptions } from "jsonwebtoken";
 import crypto from "crypto";
 
-const privateKey = process.env.PRIVATE_KEY;
-
 export const join = async (req: Request, res: Response) => {
     try {
         const { email, password }: User = req.body;
@@ -46,11 +44,11 @@ export const login = async (req: Request, res: Response) => {
             if (user) {
                 const payload = { ...user };
                 const options: SignOptions = {
-                    expiresIn: "10m",
+                    expiresIn: "1m",
                     issuer: "JaeHyeok",
                 };
-                if (privateKey) {
-                    const token = jwt.sign(payload, privateKey, options);
+                if (process.env.PRIVATE_KEY) {
+                    const token = jwt.sign(payload, process.env.PRIVATE_KEY, options);
                     res.cookie("token", token, { httpOnly: true });
                     res.json(user);
                 }
@@ -69,7 +67,7 @@ export const login = async (req: Request, res: Response) => {
 export const requestPasswordReset = async (req: Request, res: Response) => {
     try {
         const { email }: User = req.body;
-        const sql = "SELECT * FROM `users` WHERE `email`=?";
+        const sql = "SELECT * FROM `users` WHERE `email` = ?";
         const [results] = await mariadb.query<RowDataPacket[]>(sql, email);
         const user = results[0];
         if (user) {
