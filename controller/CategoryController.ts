@@ -8,6 +8,12 @@ export const fetchAllCategories = async (req: Request, res: Response) => {
         const sql = "SELECT * FROM `categories` ORDER BY `category_id` ASC";
         const [results] = await mariadb.query<RowDataPacket[]>(sql);
         if (results.length) {
+            results.forEach((result) => {
+                result.categoryId = result.category_id;
+                result.categoryName = result.category_name;
+                delete result.category_id;
+                delete result.category_name;
+            });
             res.json(results);
         } else {
             res.status(httpStatusCode.NOT_FOUND).end();

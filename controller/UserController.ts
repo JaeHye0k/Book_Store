@@ -18,12 +18,12 @@ export const join = async (req: Request, res: Response) => {
         // 암호화된 비밀번호와 salt 를 DB에 저장
         const cols = ["email", "password", "salt"];
         const values = [email, hashedPassword, salt];
-        const [results] = await mariadb.query<ResultSetHeader>(sql, [cols, values]);
-
-        res.status(httpStatusCode.CREATED).json(results);
+        const [result] = await mariadb.query<ResultSetHeader>(sql, [cols, values]);
+        if (result.affectedRows) res.status(httpStatusCode.CREATED).json(result);
+        else res.status(httpStatusCode.BAD_REQUEST).end();
     } catch (e) {
         const error = e as Error;
-        res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json(error);
+        res.status(httpStatusCode.BAD_REQUEST).json(error);
     }
 };
 
@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
             if (user) {
                 const payload = { ...user };
                 const options: SignOptions = {
-                    expiresIn: "1m",
+                    expiresIn: "30m",
                     issuer: "JaeHyeok",
                 };
                 if (process.env.PRIVATE_KEY) {
@@ -60,7 +60,7 @@ export const login = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json(error);
+        res.status(httpStatusCode.BAD_REQUEST).json(error);
     }
 };
 
@@ -77,7 +77,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json(error);
+        res.status(httpStatusCode.BAD_REQUEST).json(error);
     }
 };
 
@@ -99,6 +99,6 @@ export const passwordReset = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json(error);
+        res.status(httpStatusCode.BAD_REQUEST).json(error);
     }
 };

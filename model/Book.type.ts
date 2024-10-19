@@ -18,4 +18,5 @@ export interface Book {
     detail?: string;
     contents?: string;
     pub_date?: string;
+    [key: string]: Book[keyof Book];
 }

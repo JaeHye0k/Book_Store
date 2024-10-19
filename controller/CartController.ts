@@ -4,7 +4,7 @@ import { CartRequestBody, JSONType } from "../model/Cart.type.js";
 import httpStatusCode from "../utills/httpStatusCode.js";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import * as core from "express-serve-static-core";
-import { ensureAuthorization } from "../utills/getUserIdFromJWT.js";
+import { ensureAuthorization } from "../utills/auth.js";
 import jwt from "jsonwebtoken";
 
 export const addCartItem = async (
@@ -56,8 +56,13 @@ export const fetchAllCartItems = async (
         }
 
         const [results] = await mariadb.query<RowDataPacket[]>(sql, values);
-        if (results.length) res.json(results);
-        else res.status(httpStatusCode.NOT_FOUND).end();
+        if (results.length) {
+            results.forEach((result) => {
+                result.bookId = result.book_id;
+                delete result.book_id;
+            });
+            res.json(results);
+        } else res.status(httpStatusCode.NOT_FOUND).end();
     } catch (e) {
         const error = e as Error;
         if (error instanceof jwt.TokenExpiredError) {
