@@ -15,6 +15,8 @@ export const addCartItem = async (
         const { bookId, quantity } = req.body;
 
         const userId = ensureAuthorization(req);
+        console.log(bookId, quantity, userId);
+        if (userId instanceof Error) throw userId;
 
         const sql = "INSERT INTO `cartItems` (??) VALUES (?)";
         const values = [
@@ -26,10 +28,8 @@ export const addCartItem = async (
         res.json(results);
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
-            res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         }
@@ -44,12 +44,14 @@ export const fetchAllCartItems = async (
         const { selected } = req.body;
 
         const userId = ensureAuthorization(req);
+        if (userId instanceof Error) throw userId;
 
-        let sql = `SELECT c.id, c.book_id, c.quantity, b.img, b.title, b.price FROM cartItems AS c
+        let sql = `SELECT c.id, c.book_id, c.quantity, b.img, b.title, b.price, b.summary
+                FROM cartItems AS c
                 LEFT JOIN books AS b
                 ON c.book_id = b.id
                 WHERE user_id = ?`;
-        const values: JSONType = [userId];
+        const values = [userId];
         if (selected) {
             sql += " AND c.id IN (?);";
             values.push(selected);
@@ -61,13 +63,11 @@ export const fetchAllCartItems = async (
                 result.bookId = result.book_id;
                 delete result.book_id;
             });
-            res.json(results);
-        } else res.status(httpStatusCode.NOT_FOUND).end();
+        }
+        res.json(results);
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
-            res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);
@@ -82,6 +82,7 @@ export const removeCartItem = async (
     try {
         const { cartItemId } = req.params;
         const userId = ensureAuthorization(req);
+        if (userId instanceof Error) throw userId;
 
         const sql = `DELETE FROM cartItems
                 WHERE id = ? AND user_id = ?`;
@@ -92,9 +93,7 @@ export const removeCartItem = async (
         else res.status(httpStatusCode.NOT_FOUND).end();
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
-            res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);

@@ -10,7 +10,6 @@ export interface OrderRequestBody {
     totalPrice: number;
     totalQuantity: number;
     firstBookTitle: string;
-    userId: number;
 }
 
 export interface OrderRecord extends RowDataPacket {

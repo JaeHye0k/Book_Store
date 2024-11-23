@@ -4,37 +4,46 @@ import { RowDataPacket } from "mysql2";
 import httpStatusCode from "../utills/httpStatusCode.js";
 import { Book, BookQuery } from "../model/Book.type.js";
 import { ensureAuthorization } from "../utills/auth.js";
+import jwt from "jsonwebtoken";
 
 export const fetchAllBooks = async (req: Request<{}, {}, {}, BookQuery>, res: Response) => {
     try {
-        let { category, isNew, limit, currentPage } = req.query;
+        let { category_id, news, limit, currentPage } = req.query;
         limit = +limit;
         currentPage = +currentPage;
-        const isNewCondition = "pub_date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)";
-        const offset = limit * (currentPage - 1);
-        const newInterval = 1;
+        const values: BookQuery[keyof BookQuery][] = [];
+        const isNewCondition = "pub_date >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
         let sql = `SELECT *,
                     (SELECT COUNT(*) FROM likes WHERE book_id = books.id) AS likes
                     FROM books`;
-        const values: BookQuery[keyof BookQuery][] = [];
-
-        if (category && isNew) {
-            sql += ` WHERE category_id = ? AND ${isNewCondition}`;
-            values.push(category, newInterval);
-        } else if (category) {
-            sql += ` WHERE category_id = ?`;
-            values.push(category);
-        } else if (isNew) {
-            sql += ` WHERE ${isNewCondition}`;
-            values.push(newInterval);
+        let totalCount = 0;
+        let where = "";
+        if (category_id && news) {
+            where = ` WHERE category_id = ? AND ${isNewCondition}`;
+            values.push(category_id);
+            totalCount = await getTotalBooks(where, category_id);
+        } else if (category_id) {
+            where = ` WHERE category_id = ?`;
+            values.push(category_id);
+            totalCount = await getTotalBooks(where, category_id);
+        } else if (news) {
+            where = ` WHERE ${isNewCondition}`;
+            totalCount = await getTotalBooks(where);
+        } else {
+            totalCount = await getTotalBooks();
         }
-        sql += " LIMIT ? OFFSET ?";
-        values.push(limit, offset);
 
+        sql += `${where} LIMIT ?`;
+        values.push(limit);
+
+        if (currentPage) {
+            const offset = limit * (currentPage - 1);
+            sql += " OFFSET ?";
+            values.push(offset);
+        }
         const [results] = await mariadb.query<RowDataPacket[]>(sql, values);
         if (results.length) {
             const books = results as Book[];
-            const totalBookCount = await getTotalBooks();
             res.json({
                 books: books.map((book) => {
                     book.pubDate = book.pub_date;
@@ -42,8 +51,8 @@ export const fetchAllBooks = async (req: Request<{}, {}, {}, BookQuery>, res: Re
                     return book;
                 }),
                 pagination: {
-                    totalBooks: totalBookCount,
-                    currentPage,
+                    totalBooks: totalCount,
+                    currentPage: currentPage || 1,
                 },
             });
         } else {
@@ -55,10 +64,15 @@ export const fetchAllBooks = async (req: Request<{}, {}, {}, BookQuery>, res: Re
     }
 };
 
-const getTotalBooks = async () => {
-    const sql = "SELECT COUNT(*) AS book_count FROM books";
-    const [results] = await mariadb.query<RowDataPacket[]>(sql);
-    return results[0].book_count;
+const getTotalBooks = async (where: string = "", categoryId?: string | number) => {
+    const sql = `SELECT COUNT(*) AS book_count FROM books ${where}`;
+    if (categoryId) {
+        const [results] = await mariadb.query<RowDataPacket[]>(sql, [categoryId]);
+        return results[0].book_count;
+    } else {
+        const [results] = await mariadb.query<RowDataPacket[]>(sql);
+        return results[0].book_count;
+    }
 };
 
 export const fetchBook = async (req: Request, res: Response) => {
@@ -68,8 +82,8 @@ export const fetchBook = async (req: Request, res: Response) => {
         // 로그인 상태면 liked 포함, 아니라면 미포함
         let userId;
         const values = [];
-        if (req.headers.authorization) {
-            userId = ensureAuthorization(req);
+        userId = ensureAuthorization(req);
+        if (!(userId instanceof Error)) {
             sql += " (EXISTS (SELECT * FROM likes WHERE book_id = ? AND user_id = ?)) AS liked,";
             values.push(bookId, userId);
         }
@@ -95,7 +109,11 @@ export const fetchBook = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        res.status(httpStatusCode.BAD_REQUEST).json(error);
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
+            res.status(httpStatusCode.UNAUTHORIZED).json(error);
+        } else {
+            res.status(httpStatusCode.BAD_REQUEST).json(error);
+        }
     }
 };
 

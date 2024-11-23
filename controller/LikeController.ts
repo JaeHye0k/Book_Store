@@ -10,6 +10,7 @@ export const addLike = async (req: Request<LikeParams, {}, LikeBody>, res: Respo
     try {
         const { bookId } = req.params;
         const userId = ensureAuthorization(req);
+        if (userId instanceof Error) throw userId;
 
         const sql = "INSERT INTO `likes` (??) VALUES (?)";
         const values = [
@@ -21,10 +22,8 @@ export const addLike = async (req: Request<LikeParams, {}, LikeBody>, res: Respo
         else res.status(httpStatusCode.BAD_REQUEST).end();
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
-            res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         }
@@ -35,6 +34,7 @@ export const cancleLike = async (req: Request<LikeParams, {}, LikeBody>, res: Re
     try {
         const { bookId } = req.params;
         const userId = ensureAuthorization(req);
+        if (userId instanceof Error) throw userId;
 
         const sql = "DELETE FROM `likes` WHERE ?? = ? AND ?? = ?";
         const values = ["user_id", userId, "book_id", bookId];
@@ -43,10 +43,8 @@ export const cancleLike = async (req: Request<LikeParams, {}, LikeBody>, res: Re
         else res.status(httpStatusCode.BAD_REQUEST).end();
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
-            res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         }

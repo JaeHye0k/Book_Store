@@ -1,6 +1,6 @@
 export interface BookQuery {
-    category?: string | number;
-    isNew?: string | boolean;
+    category_id?: string | number;
+    news?: string | boolean;
     limit: string | number;
     currentPage: string | number;
 }

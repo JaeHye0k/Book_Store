@@ -50,7 +50,7 @@ export const login = async (req: Request, res: Response) => {
                 if (process.env.PRIVATE_KEY) {
                     const token = jwt.sign(payload, process.env.PRIVATE_KEY, options);
                     res.cookie("token", token, { httpOnly: true });
-                    res.json(user);
+                    res.json({ user, token });
                 }
             }
         } else {

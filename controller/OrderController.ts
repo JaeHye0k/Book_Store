@@ -13,6 +13,7 @@ export const order = async (
 ) => {
     try {
         const userId = ensureAuthorization(req);
+        if (userId instanceof Error) throw userId;
         // INSERT deliveries
         const { deliveryResult, deliveryId } = await insertDeliveries(req);
 
@@ -117,6 +118,7 @@ const deleteCartItems = async (req: Request<core.ParamsDictionary, any, OrderReq
 export const fetchAllOrders = async (req: Request, res: Response) => {
     try {
         const userId = ensureAuthorization(req);
+        if (userId instanceof Error) throw userId;
         const sql = `SELECT o.id, d.address, d.receiver, d.contact, o.book_title, o.total_quantity, o.total_price, o.ordered_at FROM orders AS o
                     LEFT JOIN deliveries AS d
                     ON o.delivery_id = d.id
@@ -139,10 +141,8 @@ export const fetchAllOrders = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
-            res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         }
@@ -152,6 +152,8 @@ export const fetchAllOrders = async (req: Request, res: Response) => {
 export const fetchOrder = async (req: Request, res: Response) => {
     try {
         const userId = ensureAuthorization(req);
+
+        if (userId instanceof Error) throw userId;
         const { id } = req.params;
         const sql = `SELECT ob.book_id, b.title, b.author, b.price, ob.quantity
                     FROM orderedBooks AS ob
@@ -172,10 +174,8 @@ export const fetchOrder = async (req: Request, res: Response) => {
         }
     } catch (e) {
         const error = e as Error;
-        if (error instanceof jwt.TokenExpiredError) {
+        if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
             res.status(httpStatusCode.UNAUTHORIZED).json(error.message);
-        } else if (error instanceof jwt.JsonWebTokenError) {
-            res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         } else {
             res.status(httpStatusCode.BAD_REQUEST).json(error.message);
         }
